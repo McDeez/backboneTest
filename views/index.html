@@ -1,0 +1,97 @@
+<html>
+  <header>
+  </header>
+  <body>
+    <script src="/jquery-1.11.0.js"></script>
+    <script src="/underscore.js"></script>
+    <script src="/backbone.js"></script>
+    <script src="/backbone.localStorage.js"></script>
+    <script LANGUAGE="JavaScript">
+      $(function(){
+        var Locations = Backbone.Model.extend({
+          defaults: {
+              name: "PlaceName",
+              type: "state",
+              state: "none"
+          }
+        });
+
+        var LocationsList = Backbone.Collection.extend({
+          model: Locations,
+          localStorage: new Backbone.LocalStorage("city-backbone"),
+          allCities: function(){
+            return this.where({type: "city"});
+          },
+          allStates: function(){
+            return this.where({type: "state"});
+          },
+          getCities: function(state){
+            return this.where({state: state});
+          }
+        });
+        var LocationsView = Backbone.View.extend({
+          tagName: "li",
+          events:{
+            "click": "clickIt"
+          },
+          clickIt: function(e){
+            $("#cities").empty();
+            _.each(Locations.getCities(e.target.innerText), function(city){
+              var view = new LocationsView({model: city});
+              $("#cities").append(view.render().el);
+            });
+          },
+          initialize: function(){
+            this.render();
+          },
+          render: function(){
+            this.$el.html("<label>" + this.model.get('name') + "</label>");
+            return this;
+          }
+        });
+        
+        var Locations = new LocationsList;
+
+        var SelectView = Backbone.View.extend({
+          el: $("#states"),
+          initialize: function(){
+            this.statesList = this.$("states");
+            this.citiesList = this.$("cities");
+            var yeah = Locations.allStates();
+            console.log("yeah:", yeah);
+            this.listenTo(Locations, "add", this.addOne);
+            this.listenTo(Locations, "reset", this.addAll);
+            this.listenTo(Locations, "all", this.render);
+            this.addAll();
+          },
+          addAll: function(){
+            _.each(Locations.allStates(), this.addOne);
+          },
+          addOne: function(location){
+            var view = new LocationsView({model: location});
+            $("#states").append(view.render().el);
+          }
+        });
+
+        Locations.add([{ name:"California",
+                            type: "state"},
+                          { name:"San Diego",
+                            type: "city",
+                            state: "California"},
+                          { name:"Nevada",
+                            type: "state"},
+                          { name:"Las Vegas",
+                            type: "city",
+                            state:"Nevada"}]);
+        var SV = new SelectView;
+      });
+    </script>
+
+    <label>States</label>
+    <ul id="states">
+    </ul>
+    <label>Cities</label>
+    <ul id="cities">
+    </ul>
+  </body>
+</html>
